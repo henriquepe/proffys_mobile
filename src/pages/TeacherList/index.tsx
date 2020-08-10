@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState} from 'react'
 import { View } from 'react-native'
 
 import { Feather } from '@expo/vector-icons'
@@ -7,6 +7,8 @@ import styles from './styles';
 import PageHeader from '../../components/PageHeader';
 import TeacherItem, {Teacher} from '../../components/TeacherItem';
 import { ScrollView, TextInput, BorderlessButton, RectButton } from 'react-native-gesture-handler';
+
+import AsyncStorage from '@react-native-community/async-storage';
 
 import {Text, Image } from 'react-native'
 import api from '../../services/api';
@@ -17,9 +19,26 @@ function TeacherList() {
 
     const [teachers, setTeachers] = useState([]);
 
+    const [favorites, setFavorites] = useState<number[]>([]);
+
     const [subject, setSubject] = useState('');
     const [week_day, setWeekDay] = useState('');
     const [time, setTime] = useState('');
+
+    function loadFavorites () {
+        AsyncStorage.getItem('favorites').then(response => {
+            if (response) {
+                const favoritedTeachers = JSON.parse(response);
+                const favoritedTeachersIds = favoritedTeachers.map((teacher: Teacher) => {
+                    return teacher.user_id
+                });
+
+                setFavorites(favoritedTeachersIds);
+            }
+        })
+    }
+
+
 
     function handleToggleFiltersVisible(){
         setIsFiltersVisible(!isFiltersVisible);
@@ -27,6 +46,9 @@ function TeacherList() {
 
 
     async function handleFiltersSubmit() {
+
+        loadFavorites();
+
         const response = await api.get('classes', {
             params: {
                 subject,
@@ -103,7 +125,14 @@ function TeacherList() {
                 }}
             >
 
-                {teachers.map((teacher: Teacher) => <TeacherItem key={teacher.user_id} teacher={teacher}/>)}
+                {teachers.map((teacher: Teacher) => {
+                    return(
+                        <TeacherItem favorited={favorites.includes(teacher.user_id)} key={teacher.user_id} teacher={teacher}/>
+                    )
+                        
+                        
+                }
+                )}
                     
             </ScrollView>
         </View> 
